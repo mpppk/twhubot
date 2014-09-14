@@ -39,7 +39,7 @@ module.exports = (robot) ->
 		constructor: (title) ->
 			_title = title
 			_date = new Date()
-			_isCorrect = false
+			_isCorrect = CorrectPictureDB.isCorrect title
 			
 			# public method
 			@getTitle = ->
@@ -47,7 +47,7 @@ module.exports = (robot) ->
 			
 			@toObject = ->
 				{title:_title, date:_date, isCorrect:_isCorrect}
-	
+
 	# ユーザーごとに保持する情報
 	class TourMember
 		constructor: (name) ->
@@ -71,7 +71,7 @@ module.exports = (robot) ->
 				if pics.length > 0
 					return "#{pics[0].title} という名前の写真は既に存在します。"
 				newPicObj = newPic.toObject()
-				newPicObj.isCorrect = CorrectPictureDB.isCorrect newPic.getTitle()
+				# newPicObj.isCorrect = CorrectPictureDB.isCorrect newPic.getTitle()
 				_db.pics.push newPicObj
 				"写真名「#{newPic.getTitle()}」を受け付けました。#{newPicObj.isCorrect}"
 			# ---- public method ----
