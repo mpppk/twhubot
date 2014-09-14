@@ -28,9 +28,11 @@ module.exports = (robot) ->
 		constructor: ->
 			
 		# 与えられたタイトルの写真が正解かどうか
-		@isCorrect = (title)->
-
-		# @getCPics
+		@isCorrect = (title) ->
+			correctPics = _cpics.correctPics
+			pics = ( pic for pic in correctPics when pic.title is title )
+			return true if pics.length > 0
+			false
 
 	# 撮った写真
 	class Picture
@@ -68,12 +70,13 @@ module.exports = (robot) ->
 				pics = ( pic for pic in _db.pics when pic.title is newPic.getTitle() )
 				if pics.length > 0
 					return "#{pics[0].title} という名前の写真は既に存在します。"
-				_db.pics.push(newPic.toObject())
-				"写真名「#{newPic.getTitle()}」を受け付けました。"
+				newPicObj = newPic.toObject()
+				newPicObj.isCorrect = CorrectPictureDB.isCorrect newPic.getTitle()
+				_db.pics.push newPicObj
+				"写真名「#{newPic.getTitle()}」を受け付けました。#{newPicObj.isCorrect}"
 			# ---- public method ----
 			
 			@deleteTourData = ->
-				console.log "in deleteTourData"
 				console.log _db.pics
 				_db.pics = [] # tourごと{}で置き換えようとすると失敗するので注意
 		 
@@ -100,7 +103,6 @@ module.exports = (robot) ->
 	robot.hear /tour data clean$/i, (msg) ->
 		name = msg.message.user.name
 		tm = new TourMember(name)
-		console.log "TourMember instance created in clean"
 		tm.deleteTourData()
 		msg.reply "tour data deleted."
 
