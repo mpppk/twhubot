@@ -18,7 +18,8 @@ module.exports = (robot) ->
 			console.log "loading correct data..."
 			request.get(options, (error, response, body) ->
 				if !error && response.statusCode == 200
-					console.log body.correctPics;
+					_cpics = body
+					console.log "data loading finished."
 				else
 					console.log 'error: '+ response.statusCode;
 			)
