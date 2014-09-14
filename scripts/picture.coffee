@@ -11,9 +11,10 @@ options = {
 };
 
 module.exports = (robot) ->
-	# robot.brain内のツアー情報へのラッパー
-	class Tour
+
+	class TourDB
 		_tourData = []
+
 		getTourData = ->
 			console.log "loading correct data..."
 			request.get(options, (error, response, body) ->
@@ -25,8 +26,6 @@ module.exports = (robot) ->
 			)
 		getTourData()
 
-		constructor: ->
-			
 		# 与えられたタイトルの写真が正解かどうか
 		@isCorrectPicture = (title) ->
 			correctPics = _tourData.correctPics
@@ -34,31 +33,51 @@ module.exports = (robot) ->
 			return true if pics.length > 0
 			false
 
-		@getTeam = (teamName) ->
-			team for team in _tourData.team when team.name is teamName
+		@getTeamData = (teamName) ->
+			teamData for teamData in _tourData.team when teamData.name is teamName
+
+		@getTeamNames = ->
+			( teamData.name for teamData in _tourData.team )
+
+	# robot.brain内のツアー情報へのラッパー
+	class Tour
+		constructor: ->
+
+			getTeams = ->
+				teamNames = TourDB.getTeamNames()
+				teams = ( new TourTeam teamName for teamName in teamNames )
+				# teams = []
+				# teams.push( new TourTeam teamName ) for teamName in teamNames
+				# teams
+
+			@getTeam = (teamName) ->
+				team for team in _teams when team.name is teamName
+
+			@getTeamByUser = (userName) ->
+
+			_teams = @getTeams()
 
 	class TourTeam
 		constructor: (teamName)->
+			# このチームに所属するメンバーのインスタンス配列を返す
 			@getMembers = ->
-				( new TourMember(userName) for userName in _teamData.member )
+				( new TourMember(userName) for userName in TourDB.getTeamData(teamName)[0].member )
 
+			# このチームのメンバーが追加した写真の一覧を返す
 			@getPictures = ->
 				teamPics = []
 				for member in _members
+					# console.log member.getPictures()
 					for memberPic in member.getPictures()
 						# teamPicsにまだ追加していない写真をならば追加
-						teamPics.push pic if ( teamPic for teamPic in teamPics when teamPic is memberPic ).length is 0
+						if ( teamPic for teamPic in teamPics when teamPic.title is memberPic.title ).length is 0
+							teamPics.push memberPic
 				teamPics
-
-			@getPicturesnum = ->
-				@getPictures().length
 
 			@getCorrectPictures = ->
 				( cpic for cpic in @getPictures() when cpic.isCorrect )
 
-			@getCorrectPicturesNum = ->
-				@getCorrectPictures().length
-			_teamData = Tour.getTeam(teamName)
+			# _teamData = TourDB.getTeamData(teamName)
 			_members = @getMembers()
 
 	# 撮った写真
@@ -66,7 +85,7 @@ module.exports = (robot) ->
 		constructor: (title) ->
 			_title = title
 			_date = new Date()
-			_isCorrect = Tour.isCorrectPicture title
+			_isCorrect = TourDB.isCorrectPicture title
 			
 			# public method
 			@getTitle = ->
@@ -80,6 +99,7 @@ module.exports = (robot) ->
 		constructor: (name) ->
 			# ---- private instance field/method ----
 			_userDB = null
+			_name = name
 			
 			# 指定されたrobot.brain.user内のデータを初期化する
 			_dbInitialize = ->
@@ -90,6 +110,9 @@ module.exports = (robot) ->
 			@getPictures = ->
 				_userDB.pics
 			
+			@getName = ->
+				_name
+
 			@getPicturesNum = ->
 				_userDB.pics.length
 
@@ -118,19 +141,16 @@ module.exports = (robot) ->
 			# constroctor
 			users = robot.brain.usersForFuzzyName(name)
 			if users.length > 1
+				console.log "too many users"
 				msg.send getAmbiguousUserText users
 				return
 			else if users.length is 0
-				msg.send "#{name}というユーザーはいません。"
+				console.log "user not found"
 				return
 			
 			users[0].tour = users[0].tour or {} 
 			_userDB = users[0].tour
 			_dbInitialize.call @
-
-	# hubot起動時に保存する変数たち
-
-
 
 	# 指定されたタイトルの写真を追加する
 	robot.hear /pic (.*)$/i, (msg) ->
@@ -142,18 +162,14 @@ module.exports = (robot) ->
 	robot.hear /status$/i, (msg) ->
 		name = msg.message.user.name
 		tm = new TourMember(name)
-		rep = "pics: #{tm.getPictures()}\n"
-		rep += "picsNum: #{tm.getPicturesNum()}\n"
-		rep += "correctPics: #{tm.getCorrectPictures()}\n"
-		rep += "correctPicsNum: #{tm.getCorrectPicturesNum()}\n"
+		rep = "投稿した写真枚数: #{tm.getPicturesNum()}\n"
+		rep += "正解した写真枚数: #{tm.getCorrectPicturesNum()}\n"
 		msg.reply rep
 
-	robot.hear /teamA status$/i, (msg) ->
+	robot.hear /teamst$/i, (msg) ->
 		team = new TourTeam "teamA"
-		rep = "pics: #{team.getPictures()}\n"
-		rep += "picsNum: #{team.getPicturesNum()}\n"
-		rep += "correctPics: #{team.getCorrectPictures()}\n"
-		rep += "correctPicsNum: #{team.getCorrectPicturesNum()}\n"
+		rep = "投稿した写真枚数: #{team.getPictures().length}\n"
+		rep += "正解した写真枚数: #{team.getCorrectPictures().length}\n"
 		msg.reply rep
 
 	# ツアーの情報をすべて削除する
