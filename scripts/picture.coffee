@@ -60,9 +60,19 @@ module.exports = (robot) ->
 			# ---- private instance field/method ----
 			
 			# ---- public method ----
-			@getPics = ->
+			@getPictures = ->
 				_db.pics
 			
+			@getPicturesNum = ->
+				_db.pics.length
+
+			@getCorrectPictures = ->
+				( pic for pic in _db.pics when pic.isCorrect is true )
+
+			@getCorrectPicturesNum = ->
+				( pic for pic in _db.pics when pic.isCorrect is true ).length
+
+
 			# 与えられたタイトルの写真を追加する.
 			# まだ撮影していないタイトルであればture、既に撮影していればfalseを返す
 			@addPicture = (title) =>
@@ -71,7 +81,6 @@ module.exports = (robot) ->
 				if pics.length > 0
 					return "#{pics[0].title} という名前の写真は既に存在します。"
 				newPicObj = newPic.toObject()
-				# newPicObj.isCorrect = CorrectPictureDB.isCorrect newPic.getTitle()
 				_db.pics.push newPicObj
 				"写真名「#{newPic.getTitle()}」を受け付けました。#{newPicObj.isCorrect}"
 			# ---- public method ----
@@ -92,6 +101,7 @@ module.exports = (robot) ->
 			users[0].tour = users[0].tour or {} 
 			_db = users[0].tour
 			_dbInitialize.call @
+
 	# 指定されたタイトルの写真を追加する
 	robot.hear /pic (.*)$/i, (msg) ->
 		picTitle = msg.match[1]
@@ -99,10 +109,18 @@ module.exports = (robot) ->
 		tm = new TourMember(name)
 		msg.reply tm.addPicture(picTitle)
 
+	robot.hear /status$/i, (msg) ->
+		name = msg.message.user.name
+		tm = new TourMember(name)
+		rep = "pics: #{tm.getPictures()}\n"
+		rep += "picsNum: #{tm.getPicturesNum()}\n"
+		rep += "correctPics: #{tm.getCorrectPictures()}\n"
+		rep += "correctPicsNum: #{tm.getCorrectPicturesNum()}\n"
+		msg.reply rep
+
 	# ツアーの情報をすべて削除する
 	robot.hear /tour data clean$/i, (msg) ->
 		name = msg.message.user.name
 		tm = new TourMember(name)
 		tm.deleteTourData()
 		msg.reply "tour data deleted."
-
