@@ -42,7 +42,6 @@ module.exports = (robot) ->
 	# robot.brain内のツアー情報へのラッパー
 	class Tour
 		constructor: ->
-
 			getTeams = ->
 				teamNames = TourDB.getTeamNames()
 				teams = ( new TourTeam teamName for teamName in teamNames )
@@ -54,8 +53,11 @@ module.exports = (robot) ->
 				team for team in _teams when team.name is teamName
 
 			@getTeamByUser = (userName) ->
+				for team in _teams
+					if ( member for member in team.getMembers() when member.getName() is userName ).length > 0
+						return team
 
-			_teams = @getTeams()
+			_teams = getTeams()
 
 	class TourTeam
 		constructor: (teamName)->
@@ -167,7 +169,9 @@ module.exports = (robot) ->
 		msg.reply rep
 
 	robot.hear /teamst$/i, (msg) ->
-		team = new TourTeam "teamA"
+		name = msg.message.user.name
+		tour = new Tour()
+		team = tour.getTeamByUser(name)
 		rep = "投稿した写真枚数: #{team.getPictures().length}\n"
 		rep += "正解した写真枚数: #{team.getCorrectPictures().length}\n"
 		msg.reply rep
