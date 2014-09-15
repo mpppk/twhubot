@@ -197,8 +197,13 @@ module.exports = (robot) ->
 					Slack.onNewPictureAdded(_name, newPic.getTitle(), team.getRoomName()) # -> userName, title
 
 				# 新しく正解写真が追加されたことを通知する
+				cpicsNum = team.getCorrectPictures().length
 				if newPicObj.isCorrect and not teamHasPic
-					Slack.onCorrectPictureAdded(_name, newPic.getTitle(), team.getCorrectPictures().length, team.getRoomName())
+					Slack.onCorrectPictureAdded(_name, newPic.getTitle(), cpicsNum, team.getRoomName())
+
+				# 正解写真が一定数以上になったことを通知する
+				if cpicsNum is 2
+					Slack.onCorrectPictureOver( "SVH4MR", team.getRoomName() ) # -> url, room name
 
 				"写真名「#{newPic.getTitle()}」を受け付けました。#{newPicObj.isCorrect}"
 			# ---- public method ----
