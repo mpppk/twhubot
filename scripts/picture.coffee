@@ -192,7 +192,6 @@ module.exports = (robot) ->
 					Slack.onNewPictureAdded(_name, newPic.getTitle(), team.getRoomName()) # -> userName, title
 
 				# 新しく正解写真が追加されたことを通知する
-				console.log "team has pic: " + teamHasPic
 				if newPicObj.isCorrect and not teamHasPic
 					Slack.onCorrectPictureAdded(_name, newPic.getTitle(), team.getCorrectPictures().length, team.getRoomName())
 
@@ -222,7 +221,7 @@ module.exports = (robot) ->
 		picTitle = msg.match[1]
 		name = msg.message.user.name
 		tm = new TourMember(name)
-		msg.reply tm.addPicture(picTitle)
+		tm.addPicture(picTitle)
 
 	robot.hear /status$/i, (msg) ->
 		name = msg.message.user.name
@@ -235,8 +234,8 @@ module.exports = (robot) ->
 		name = msg.message.user.name
 		tour = new Tour()
 		team = tour.getTeamByUser(name)
-		rep = "投稿した写真枚数: #{team.getPictures().length}\n"
-		rep += "正解した写真枚数: #{team.getCorrectPictures().length}\n"
+		rep = "チームの投稿した写真枚数: #{team.getPictures().length}\n"
+		rep += "チームの正解した写真枚数: #{team.getCorrectPictures().length}\n"
 		msg.reply rep
 
 	# ツアーの情報をすべて削除する
