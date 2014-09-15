@@ -11,12 +11,16 @@ options = {
 };
 
 exec = require('child_process').exec
+
+# スクリプト全体で利用可能な変数。初期化はデータロードが終わってから行う
+g_tour = null
+
 module.exports = (robot) ->
 	class Slack
 		_url = "http://harvelous-hubot.herokuapp.com/hubot/tw/"
 		_option = "--dump-header - "
-		@onCorrectPictureAdded: (userName, title, correctPicsNum) ->
-			msg = _url
+		@onNewPictureAdded: (userName, title, correctPicsNum) ->
+			msg = _url + "newpic/"
 			msg += "#{userName}/"
 			msg += "#{title}/"
 			msg += "#{correctPicsNum}/"
@@ -24,7 +28,6 @@ module.exports = (robot) ->
 			exec("curl #{_option} #{msg}", (err, stdout, stderr) ->
 				console.log stdout
 			)
-
 
 	class TourDB
 		_tourData = []
@@ -34,6 +37,7 @@ module.exports = (robot) ->
 			request.get(options, (error, response, body) ->
 				if !error && response.statusCode == 200
 					_tourData = body
+					g_tour = new Tour()
 					console.log "data loading finished."
 				else
 					console.log 'error: '+ response.statusCode;
@@ -89,7 +93,14 @@ module.exports = (robot) ->
 			@getCorrectPictures = ->
 				( cpic for cpic in @getPictures() when cpic.isCorrect )
 
+			@getRoomName = ->
+				if _teamName is "teamA"
+					return "conference_room"
+				else
+					return "conference_room"
+
 			# _teamData = TourDB.getTeamData(teamName)
+			_teamName = teamName
 			_members = @getMembers()
 
 	# 撮った写真
@@ -143,8 +154,11 @@ module.exports = (robot) ->
 					return "#{pics[0].title} という名前の写真は既に存在します。"
 				newPicObj = newPic.toObject()
 				_userDB.pics.push newPicObj
+
 				# 新しく正解写真が追加されたことを通知する
-				Slack.onCorrectPictureAdded("a", "b", 10)
+				roomName = g_tour.getTeamByUser(_name).getRoomName()
+				Slack.onNewPictureAdded(_name, newPic.getTitle(), roomName) # -> userName, title
+
 				"写真名「#{newPic.getTitle()}」を受け付けました。#{newPicObj.isCorrect}"
 			# ---- public method ----
 			
@@ -155,11 +169,11 @@ module.exports = (robot) ->
 			# constroctor
 			users = robot.brain.usersForFuzzyName(name)
 			if users.length > 1
-				console.log "too many users"
+				console.log "too many users (#{name})"
 				msg.send getAmbiguousUserText users
 				return
 			else if users.length is 0
-				console.log "user not found"
+				console.log "user not found (#{name})"
 				return
 			
 			users[0].tour = users[0].tour or {} 
