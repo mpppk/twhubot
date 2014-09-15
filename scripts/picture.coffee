@@ -98,7 +98,11 @@ module.exports = (robot) ->
 		constructor: (teamName)->
 			# このチームに所属するメンバーのインスタンス配列を返す
 			@getMembers = ->
-				( new TourMember(userName) for userName in TourDB.getTeamData(teamName)[0].member )
+				members = []
+				for userName in TourDB.getTeamData(teamName)[0].member
+					member = new TourMember(userName)
+					members.push(member) if member.isExist()
+				members
 
 			# このチームのメンバーが追加した写真の一覧を返す
 			@getPictures = ->
@@ -150,6 +154,7 @@ module.exports = (robot) ->
 			# ---- private instance field/method ----
 			_userDB = null
 			_name = name
+			_isExist = true
 			
 			# 指定されたrobot.brain.user内のデータを初期化する
 			_dbInitialize = ->
@@ -202,14 +207,19 @@ module.exports = (robot) ->
 				console.log _userDB.pics
 				_userDB.pics = [] # tourごと{}で置き換えようとすると失敗するので注意
 		 
+			@isExist = ->
+				_isExist
+
 			# constroctor
 			users = robot.brain.usersForFuzzyName(name)
 			if users.length > 1
 				console.log "too many users (#{name})"
 				msg.send getAmbiguousUserText users
+				_isExist = false
 				return
 			else if users.length is 0
 				console.log "user not found (#{name})"
+				_isExist = false
 				return
 			
 			users[0].tour = users[0].tour or {} 
@@ -236,6 +246,12 @@ module.exports = (robot) ->
 		team = tour.getTeamByUser(name)
 		rep = "チームの投稿した写真枚数: #{team.getPictures().length}\n"
 		rep += "チームの正解した写真枚数: #{team.getCorrectPictures().length}\n"
+		pics = team.getPictures()
+		console.log "チーム写真"
+		console.log pic for pic in pics
+		cpics = team.getCorrectPictures()
+		console.log "チーム正解写真"
+		console.log cpic for cpic in cpics
 		msg.reply rep
 
 	# ツアーの情報をすべて削除する
