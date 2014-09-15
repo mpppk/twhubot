@@ -16,6 +16,28 @@ exec = require('child_process').exec
 g_tour = null
 
 module.exports = (robot) ->
+	class Prize
+		_menHas5Prize = false
+		_menHas10Prize = false
+		_womenHas5Prize = false
+		_womenHas10Prize = false
+		@getURL = (teamName, correctPicsNum) ->
+			if teamName is "men"
+				if correctPicsNum is 5 and not _menHas5Prize
+					_menHas5Prize = true
+					return "pm8xuS"
+				if correctPicsNum is 10 and not _menHas10Prize
+					_menHas10Prize = true
+					return "KtNA5e"
+			if teamName is "women"
+				if correctPicsNum is 5 and not _womenHas5Prize
+					_womenHas5Prize = true
+					return "azfCeM"
+				if correctPicsNum is 10 and not _womenHas10Prize
+					_womenHas10Prize = true
+					return "PZCXSX"
+			return null
+
 	class Slack
 		_url = "http://harvelous-hubot.herokuapp.com/hubot/tw/"
 		_option = "--dump-header - "
@@ -130,6 +152,9 @@ module.exports = (robot) ->
 				pics = @getPictures()
 				( pic for pic in pics when pic.title is title ).length > 0
 
+			@getName = ->
+				_teamName
+
 			# _teamData = TourDB.getTeamData(teamName)
 			_teamName = teamName
 			_members = @getMembers()
@@ -202,9 +227,10 @@ module.exports = (robot) ->
 					Slack.onCorrectPictureAdded(_name, newPic.getTitle(), cpicsNum, team.getRoomName())
 
 				# 正解写真が一定数以上になったことを通知する
-				if cpicsNum is 2
-					Slack.onCorrectPictureOver( "SVH4MR", team.getRoomName() ) # -> url, room name
-
+				prizeURL = Prize.getURL(team.getName(), cpicsNum) # -> team name, correct pic num
+				if prizeURL isnt null
+					Slack.onCorrectPictureOver( prizeURL, team.getRoomName() ) # -> url, room name
+					
 				"写真名「#{newPic.getTitle()}」を受け付けました。#{newPicObj.isCorrect}"
 			# ---- public method ----
 			
