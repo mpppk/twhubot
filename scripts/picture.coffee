@@ -20,7 +20,6 @@ module.exports = (robot) ->
 		_url = "http://harvelous-hubot.herokuapp.com/hubot/tw/"
 		_option = "--dump-header - "
 		@onNewPictureAdded: (userName, title, roomName) ->
-			console.log "in onNewPictureAdded"
 			msg = _url + "newpic/"
 			msg += "#{userName}/"
 			msg += "#{title}/"
@@ -125,7 +124,6 @@ module.exports = (robot) ->
 			# 引数の写真を既に撮っているかどうか
 			@hasPicture = (title) ->
 				pics = @getPictures()
-				console.log pics
 				( pic for pic in pics when pic.title is title ).length > 0
 
 			# _teamData = TourDB.getTeamData(teamName)
@@ -190,7 +188,8 @@ module.exports = (robot) ->
 				_userDB.pics.push newPicObj
 
 				# 新しく写真が追加されたことを通知する
-				Slack.onNewPictureAdded(_name, newPic.getTitle(), team.getRoomName()) # -> userName, title
+				unless teamHasPic
+					Slack.onNewPictureAdded(_name, newPic.getTitle(), team.getRoomName()) # -> userName, title
 
 				# 新しく正解写真が追加されたことを通知する
 				console.log "team has pic: " + teamHasPic
