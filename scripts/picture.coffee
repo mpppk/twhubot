@@ -120,10 +120,10 @@ module.exports = (robot) ->
 
 			# slackで呟くチャンネルを取得
 			@getRoomName = ->
-				if _teamName is "teamA"
+				if _teamName is "dev"
 					return "conference_room"
 				else
-					return "conference_room"
+					return _teamName
 
 			# 引数の写真を既に撮っているかどうか
 			@hasPicture = (title) ->
