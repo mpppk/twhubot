@@ -19,11 +19,32 @@ module.exports = (robot) ->
 	class Slack
 		_url = "http://harvelous-hubot.herokuapp.com/hubot/tw/"
 		_option = "--dump-header - "
-		@onNewPictureAdded: (userName, title, correctPicsNum) ->
+		@onNewPictureAdded: (userName, title, roomName) ->
+			console.log "in onNewPictureAdded"
 			msg = _url + "newpic/"
 			msg += "#{userName}/"
 			msg += "#{title}/"
+			msg += "#{roomName}/"
+			console.log "curl #{_option} #{msg}"
+			exec("curl #{_option} #{msg}", (err, stdout, stderr) ->
+				console.log stdout
+			)
+
+		@onCorrectPictureAdded: (userName, title, correctPicsNum, roomName) ->
+			msg = _url + "cpic/"
+			msg += "#{userName}/"
+			msg += "#{title}/"
 			msg += "#{correctPicsNum}/"
+			msg += "#{roomName}/"
+			console.log "curl #{_option} #{msg}"
+			exec("curl #{_option} #{msg}", (err, stdout, stderr) ->
+				console.log stdout
+			)
+
+		@onCorrectPictureOver: (url, roomName) ->
+			msg = _url + "cpicover/"
+			msg += "#{url}/"
+			msg += "#{roomName}/"
 			console.log "curl #{_option} #{msg}"
 			exec("curl #{_option} #{msg}", (err, stdout, stderr) ->
 				console.log stdout
@@ -90,14 +111,22 @@ module.exports = (robot) ->
 							teamPics.push memberPic
 				teamPics
 
+			# 正解である写真一覧を取得
 			@getCorrectPictures = ->
 				( cpic for cpic in @getPictures() when cpic.isCorrect )
 
+			# slackで呟くチャンネルを取得
 			@getRoomName = ->
 				if _teamName is "teamA"
 					return "conference_room"
 				else
 					return "conference_room"
+
+			# 引数の写真を既に撮っているかどうか
+			@hasPicture = (title) ->
+				pics = @getPictures()
+				console.log pics
+				( pic for pic in pics when pic.title is title ).length > 0
 
 			# _teamData = TourDB.getTeamData(teamName)
 			_teamName = teamName
@@ -153,11 +182,20 @@ module.exports = (robot) ->
 				if pics.length > 0
 					return "#{pics[0].title} という名前の写真は既に存在します。"
 				newPicObj = newPic.toObject()
+
+				# 写真を追加する前にチームがその写真を撮っていたかどうか
+				team = g_tour.getTeamByUser(_name)
+				teamHasPic = team.hasPicture newPic.getTitle()
+				
 				_userDB.pics.push newPicObj
 
+				# 新しく写真が追加されたことを通知する
+				Slack.onNewPictureAdded(_name, newPic.getTitle(), team.getRoomName()) # -> userName, title
+
 				# 新しく正解写真が追加されたことを通知する
-				roomName = g_tour.getTeamByUser(_name).getRoomName()
-				Slack.onNewPictureAdded(_name, newPic.getTitle(), roomName) # -> userName, title
+				console.log "team has pic: " + teamHasPic
+				if newPicObj.isCorrect and not teamHasPic
+					Slack.onCorrectPictureAdded(_name, newPic.getTitle(), team.getCorrectPictures().length, team.getRoomName())
 
 				"写真名「#{newPic.getTitle()}」を受け付けました。#{newPicObj.isCorrect}"
 			# ---- public method ----
