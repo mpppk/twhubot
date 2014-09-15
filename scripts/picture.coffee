@@ -10,7 +10,21 @@ options = {
   json: true
 };
 
+exec = require('child_process').exec
 module.exports = (robot) ->
+	class Slack
+		_url = "http://harvelous-hubot.herokuapp.com/hubot/tw/"
+		_option = "--dump-header - "
+		@onCorrectPictureAdded: (userName, title, correctPicsNum) ->
+			msg = _url
+			msg += "#{userName}/"
+			msg += "#{title}/"
+			msg += "#{correctPicsNum}/"
+			console.log "curl #{_option} #{msg}"
+			exec("curl #{_option} #{msg}", (err, stdout, stderr) ->
+				console.log stdout
+			)
+
 
 	class TourDB
 		_tourData = []
@@ -45,9 +59,6 @@ module.exports = (robot) ->
 			getTeams = ->
 				teamNames = TourDB.getTeamNames()
 				teams = ( new TourTeam teamName for teamName in teamNames )
-				# teams = []
-				# teams.push( new TourTeam teamName ) for teamName in teamNames
-				# teams
 
 			@getTeam = (teamName) ->
 				team for team in _teams when team.name is teamName
@@ -69,7 +80,6 @@ module.exports = (robot) ->
 			@getPictures = ->
 				teamPics = []
 				for member in _members
-					# console.log member.getPictures()
 					for memberPic in member.getPictures()
 						# teamPicsにまだ追加していない写真をならば追加
 						if ( teamPic for teamPic in teamPics when teamPic.title is memberPic.title ).length is 0
@@ -133,6 +143,8 @@ module.exports = (robot) ->
 					return "#{pics[0].title} という名前の写真は既に存在します。"
 				newPicObj = newPic.toObject()
 				_userDB.pics.push newPicObj
+				# 新しく正解写真が追加されたことを通知する
+				Slack.onCorrectPictureAdded("a", "b", 10)
 				"写真名「#{newPic.getTitle()}」を受け付けました。#{newPicObj.isCorrect}"
 			# ---- public method ----
 			
