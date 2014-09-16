@@ -264,6 +264,13 @@ module.exports = (robot) ->
 		tm = new TourMember(name)
 		tm.addPicture(picTitle)
 
+	robot.hear /(.*)の写真撮った$/i, (msg) ->
+		picTitle = msg.match[1]
+		picTitle.slice(0, -6)
+		name = msg.message.user.name
+		tm = new TourMember(name)
+		tm.addPicture(picTitle)
+
 	robot.hear /status$/i, (msg) ->
 		name = msg.message.user.name
 		tm = new TourMember(name)
